@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css"
+    integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <title>My Geocode App</title>
+  <style>
+    #map {
+      height: 400px;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2 id="text-center">Enter Location: </h2>
+    <form id="location-form">
+      <input type="text" id="location-input" class="form-control form-control-lg">
+      <br>
+      <button type="submit" class="btn btn-primary btn-block">Submit</button>
+    </form>
+    <div class="card-block" id="formatted-address"></div>
+    <div class="card-block" id="address-components"></div>
+    <div class="card-block" id="geometry"></div>
+
+  </div>
+
+  <script>
+    // Get location form
+    var locationForm = document.getElementById('location-form');
+
+    // Listen for submit
+    locationForm.addEventListener('submit', geocode);
+    function geocode(e) {
+      // Prevent actual submit
+      e.preventDefault();
+
+      var location = document.getElementById('location-input').value;
+
+      axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+        params: {
+          address: location,
+          key: 'AIzaSyCxRjG2m9zg_nOsumRFY2E4-XrMpMvd_hI'
+        }
+      })
+        .then(function (response) {
+
+          // Formatted Address
+          var formattedAddress = response.data.results[0].formatted_address;
+          var formattedAddressOutput = `
+          <ul class="list-group">
+            <li class="list-group-item">${formattedAddress}</li>
+          </ul>
+        `;
+
+          // Address Components
+          var addressComponents = response.data.results[0].address_components;
+          var addressComponentsOutput = '<ul class="list-group">';
+          for (var i = 0; i < addressComponents.length; i++) {
+            addressComponentsOutput += `
+            <li class="list-group-item"><strong>${addressComponents[i].types[0]}</strong>: ${addressComponents[i].long_name}</li>
+          `;
+          }
+          addressComponentsOutput += '</ul>';
+
+          // Geometry
+          var lat = response.data.results[0].geometry.location.lat;
+          var lng = response.data.results[0].geometry.location.lng;
+          var geometryOutput = `
+          <ul class="list-group">
+            <li class="list-group-item"><strong>Latitude</strong>: ${lat}</li>
+            <li class="list-group-item"><strong>Longitude</strong>: ${lng}</li>
+          </ul>
+        `;
+          // Output to app
+          document.getElementById('formatted-address').innerHTML = formattedAddressOutput;
+          document.getElementById('address-components').innerHTML = addressComponentsOutput;
+          document.getElementById('geometry').innerHTML = geometryOutput;
+
+          //Show map Button
+
+          const showmapBtn = document.createElement('button');
+          showmapBtn.className = 'btn btn-primary btn-block';
+          showmapBtn.id = 'showBtn';
+
+          showmapBtn.addEventListener('click', function () {
+            showMap(lat, lng);
+            const mapDiv = document.createElement('div');
+            mapDiv.id = 'map';
+          });
+
+
+          //Show Map function
+          function showMap(lat, lng) {
+
+            axios.get('https://maps.googleapis.com/maps/api/js', {
+              params: {
+                callback: initMap,
+                key: 'AIzaSyCxRjG2m9zg_nOsumRFY2E4-XrMpMvd_hI'
+              }
+            }).then(
+              function initMap() {
+                // Map options
+                var options = {
+                  zoom: 8,
+                  center: { lat, lng }
+                }
+
+                // New map
+                var map = new google.maps.Map(document.getElementById('map'), options);
+
+
+                // Add marker
+                var marker = new google.maps.Marker({
+                  position: { lat, lng },
+                  map: map,
+                  icon: 'https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png'
+                });
+
+                var infoWindow = new google.maps.InfoWindow({
+                  content: '<h1>You are here</h1>'
+                });
+
+                marker.addListener('click', function () {
+                  infoWindow.open(map, marker);
+                });
+
+
+
+              })
+
+              .catch(function (error) {
+                console.log(error);
+              });
+
+          }
+        })
+
+        .catch(function (error) {
+          console.log(error);
+        });
+    }
+
+
+
+  </script>
+
+
+
+</body>
+
+</html>
